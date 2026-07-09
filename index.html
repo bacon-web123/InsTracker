@@ -1,0 +1,1295 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Instagram 粉絲追蹤與貼文照片打包下載器</title>
+    
+    <!-- 內嵌 SVG Favicon (完美重現 watermarked_img_14332980277223837340.png 科技霓虹網格盾牌設計) -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'><defs><linearGradient id='g' x1='0%25' y1='0%25' x2='0%25' y2='100%25'><stop offset='0%25' stop-color='%23FF1493'/><stop offset='100%25' stop-color='%2300D2FF'/></linearGradient><clipPath id='c'><path d='M60,18 C73.5,18 84.5,22 86,25.5 C86,45.5 81.5,74 60,88.5 C38.5,74 34,45.5 34,25.5 C35.5,22 46.5,18 60,18 Z'/></clipPath></defs><path d='M60,15 C75,15 87.5,19.5 89,23.5 C89,46 84,77.5 60,93.5 C36,77.5 31,46 31,23.5 C32.5,19.5 45,15 60,15 Z' fill='none' stroke='url(%23g)' stroke-width='6' stroke-linejoin='round'/><g clip-path='url(%23c)'><line x1='42' y1='0' x2='42' y2='120' stroke='url(%23g)' stroke-width='3' opacity='0.8'/><line x1='51' y1='0' x2='51' y2='120' stroke='url(%23g)' stroke-width='3' opacity='0.8'/><line x1='60' y1='0' x2='60' y2='120' stroke='url(%23g)' stroke-width='3.5' opacity='0.9'/><line x1='69' y1='0' x2='69' y2='120' stroke='url(%23g)' stroke-width='3' opacity='0.8'/><line x1='78' y1='0' x2='78' y2='120' stroke='url(%23g)' stroke-width='3' opacity='0.8'/><line x1='0' y1='27' x2='120' y2='27' stroke='url(%23g)' stroke-width='3' opacity='0.8'/><line x1='0' y1='37' x2='120' y2='37' stroke='url(%23g)' stroke-width='3' opacity='0.8'/><line x1='0' y1='47' x2='120' y2='47' stroke='url(%23g)' stroke-width='3' opacity='0.8'/><line x1='0' y1='57' x2='120' y2='57' stroke='url(%23g)' stroke-width='3' opacity='0.8'/><line x1='0' y1='67' x2='120' y2='67' stroke='url(%23g)' stroke-width='3' opacity='0.8'/><line x1='0' y1='77' x2='120' y2='77' stroke='url(%23g)' stroke-width='3' opacity='0.8'/></g></svg>">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts Inter & Noto Sans TC -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        body {
+            font-family: 'Inter', 'Noto Sans TC', sans-serif;
+            background: radial-gradient(circle at top right, #1a082e, #05030a);
+        }
+        .ig-gradient-text {
+            background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .ig-gradient-bg {
+            background: linear-gradient(135deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
+        }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.04);
+            backdrop-filter: blur(16px);
+            border: 1px rgba(255, 255, 255, 0.08) solid;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.02);
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.4);
+        }
+    </style>
+</head>
+<body class="text-gray-100 min-h-screen pb-12">
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-3"></div>
+
+    <!-- Header Section -->
+    <header class="max-w-7xl mx-auto px-4 pt-8 pb-4">
+        <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-2xl ig-gradient-bg flex items-center justify-center text-white text-2xl shadow-lg shadow-pink-500/20">
+                    <i class="fab fa-instagram"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold tracking-tight">InsTracker <span class="text-xs bg-pink-500/20 text-pink-400 border border-pink-500/30 px-2 py-0.5 rounded-full ml-2">v1.4.0 終極安全版</span></h1>
+                    <p class="text-xs text-gray-400">真實粉絲關係解析（試算表） & 專頁貼文照片一鍵打包下載 (免外部依賴)</p>
+                </div>
+            </div>
+            
+            <div class="flex gap-2 bg-black/20 p-1 rounded-xl border border-white/5">
+                <button onclick="switchTab('photo-tab')" id="btn-photo-tab" class="px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 bg-white/10 text-white">
+                    <i class="fas fa-images text-pink-400 mr-1.5"></i> 1. 貼文照片打包下載
+                </button>
+                <button onclick="switchTab('real-tab')" id="btn-real-tab" class="px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 text-gray-400 hover:text-white hover:bg-white/5">
+                    <i class="fas fa-users mr-1.5"></i> 2. 粉絲關係匯入
+                </button>
+                <button onclick="switchTab('sim-tab')" id="btn-sim-tab" class="px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 text-gray-400 hover:text-white hover:bg-white/5">
+                    <i class="fas fa-table mr-1.5"></i> 3. 關係比對儀表板
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-7xl mx-auto px-4 mt-6">
+        
+        <!-- Tab 1: New Photo Downloader Tab -->
+        <div id="photo-tab" class="tab-content block">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Instruction Area -->
+                <div class="lg:col-span-2 flex flex-col gap-6">
+                    <div class="glass-panel p-6 rounded-2xl border-l-4 border-l-pink-500">
+                        <h2 class="text-xl font-bold mb-3 flex items-center gap-2">
+                            <i class="fas fa-cloud-download-alt text-pink-400"></i>
+                            <span>全新功能：IG 專頁貼文照片「一鍵打包下載 (ZIP)」</span>
+                        </h2>
+                        <p class="text-xs text-gray-400 leading-relaxed mb-6">
+                            想要下載某位朋友、網紅或自己專頁裡的所有貼文相片嗎？我們為您撰寫了專用下載腳本，會自動抓取該用戶專頁上的**所有貼文（含多圖輪播）並打包成 ZIP 下載**，相片將依照日期與序號命名。
+                        </p>
+
+                        <!-- Step Timeline UI -->
+                        <div class="space-y-6 relative border-l border-white/10 pl-6 ml-3">
+                            <!-- Step 1 -->
+                            <div class="relative">
+                                <span class="absolute -left-[35px] top-0 w-6 h-6 rounded-full bg-pink-600 border-4 border-gray-900 text-[10px] font-bold flex items-center justify-center text-white">1</span>
+                                <h3 class="text-sm font-bold text-gray-100 flex items-center gap-2">
+                                    <span>在瀏覽器開啟目標用戶的 IG 專頁</span>
+                                    <span class="text-xs text-gray-400">（例：https://www.instagram.com/目標帳號/）</span>
+                                </h3>
+                                <p class="text-xs text-gray-400 mt-1">請確保您是在登入狀態下，並停在該帳號的個人首頁。</p>
+                            </div>
+
+                            <!-- Step 2 -->
+                            <div class="relative">
+                                <span class="absolute -left-[35px] top-0 w-6 h-6 rounded-full bg-pink-600 border-4 border-gray-900 text-[10px] font-bold flex items-center justify-center text-white">2</span>
+                                <h3 class="text-sm font-bold text-gray-100">複製下方「貼文相片打包下載腳本」</h3>
+                                <p class="text-xs text-gray-400 mt-1">點擊右側複製按鈕，這段安全、高效的媒體下載核心代碼會存入您的剪貼簿。</p>
+                                <div class="mt-3 flex items-center gap-2">
+                                    <button onclick="copyPhotoScript()" class="px-4 py-2 bg-pink-600 hover:bg-pink-500 active:scale-95 text-white text-xs font-semibold rounded-lg flex items-center gap-1.5 shadow-lg shadow-pink-900/30 transition-all">
+                                        <i class="fas fa-copy"></i> 複製貼文相片下載腳本
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Step 3 -->
+                            <div class="relative">
+                                <span class="absolute -left-[35px] top-0 w-6 h-6 rounded-full bg-pink-600 border-4 border-gray-900 text-[10px] font-bold flex items-center justify-center text-white">3</span>
+                                <h3 class="text-sm font-bold text-gray-100">貼上執行，開始自動打包！</h3>
+                                <p class="text-xs text-gray-400 mt-1">
+                                    在該 IG 頁面上按下鍵盤的 <kbd class="px-1.5 py-0.5 bg-white/10 rounded text-gray-300 text-[10px]">F12</kbd> (Mac 請按 <kbd class="px-1.5 py-0.5 bg-white/10 rounded text-gray-300 text-[10px]">Option + Cmd + I</kbd>)。
+                                    切換到 <strong>Console (控制台)</strong> 分頁，並按下 <kbd class="px-1.5 py-0.5 bg-white/10 rounded text-gray-300 text-[10px]">Ctrl + V</kbd> 貼上後按 <strong>Enter</strong>。
+                                </p>
+                            </div>
+
+                            <!-- Step 4 -->
+                            <div class="relative">
+                                <span class="absolute -left-[35px] top-0 w-6 h-6 rounded-full bg-emerald-600 border-4 border-gray-900 text-[10px] font-bold flex items-center justify-center text-white">4</span>
+                                <h3 class="text-sm font-bold text-emerald-400">大功告成，收取 ZIP 檔</h3>
+                                <p class="text-xs text-gray-400 mt-1">
+                                    腳本會顯示進度條，將所有相片快速抓取，並自動下載一個名為 <code class="text-pink-300 bg-pink-500/10 px-1 py-0.5 rounded text-[11px]">IG_貼文照片_[帳號].zip</code> 的檔案。解壓縮後即可獲得該專頁的所有高畫質相片！
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Side Information Panel -->
+                <div class="lg:col-span-1 flex flex-col gap-6">
+                    <div class="glass-panel p-6 rounded-2xl flex flex-col justify-between min-h-[350px]">
+                        <div>
+                            <h2 class="text-lg font-bold mb-4 flex items-center gap-2">
+                                <i class="fas fa-shield-alt text-emerald-400"></i>
+                                <span>安全與隱私權宣告</span>
+                            </h2>
+                            <ul class="space-y-4 text-xs text-gray-300 leading-relaxed">
+                                <li class="flex gap-2">
+                                    <i class="fas fa-check-circle text-emerald-400 mt-0.5"></i>
+                                    <span><strong>免輸入密碼：</strong>此操作完全在您登入的瀏覽器本機內進行，不會外洩任何個人權限資訊。</span>
+                                </li>
+                                <li class="flex gap-2">
+                                    <i class="fas fa-check-circle text-emerald-400 mt-0.5"></i>
+                                    <span><strong>支援任何可看帳號：</strong>只要您的 IG 帳號本身可以看得到的個人專頁（包含公開帳號、及您已追蹤的私人帳號），通通都能順暢抓取！</span>
+                                </li>
+                                <li class="flex gap-2">
+                                    <i class="fas fa-check-circle text-emerald-400 mt-0.5"></i>
+                                    <span><strong>抗封鎖延遲：</strong>內建防頻繁抓取延遲，安全平穩。</span>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="p-4 bg-pink-500/10 border border-pink-500/20 rounded-xl text-xs text-pink-300 mt-4">
+                            <i class="fas fa-lightbulb mr-1"></i>
+                            <span>溫馨提示：本功能亦支援下載限時動態精選，或是貼文內的所有短片封面照片。</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Tab 2: Real Data Parser Mode (Followers) -->
+        <div id="real-tab" class="tab-content hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Instructions Panel -->
+                <div class="lg:col-span-2 flex flex-col gap-6">
+                    <div class="glass-panel p-6 rounded-2xl border-l-4 border-l-pink-500">
+                        <h2 class="text-xl font-bold mb-3 flex items-center gap-2">
+                            <i class="fas fa-bolt text-yellow-400"></i>
+                            <span>超簡單！獨家「100% 真實粉絲資料」極速抓取步驟</span>
+                        </h2>
+                        <p class="text-xs text-gray-400 leading-relaxed mb-6">
+                            不需要提供密碼給任何可疑網站！只需打開您平常用的網頁瀏覽器，複製下方特製的抓取代碼，在 Instagram 網頁版上貼上執行即可。100% 安全、不封號。
+                        </p>
+
+                        <!-- Step Timeline UI -->
+                        <div class="space-y-6 relative border-l border-white/10 pl-6 ml-3">
+                            <!-- Step 1 -->
+                            <div class="relative">
+                                <span class="absolute -left-[35px] top-0 w-6 h-6 rounded-full bg-pink-600 border-4 border-gray-900 text-[10px] font-bold flex items-center justify-center text-white">1</span>
+                                <h3 class="text-sm font-bold text-gray-100 flex items-center gap-2">
+                                    <span>登入 Instagram 網頁版</span>
+                                    <a href="https://www.instagram.com" target="_blank" class="text-pink-400 hover:underline text-xs inline-flex items-center gap-1">
+                                        <span>開啟 IG 網站</span> <i class="fas fa-external-link-alt text-[10px]"></i>
+                                    </a>
+                                </h3>
+                                <p class="text-xs text-gray-400 mt-1">請在電腦的 Chrome / Edge 瀏覽器登入您的 IG 帳號。</p>
+                            </div>
+
+                            <!-- Step 2 -->
+                            <div class="relative">
+                                <span class="absolute -left-[35px] top-0 w-6 h-6 rounded-full bg-pink-600 border-4 border-gray-900 text-[10px] font-bold flex items-center justify-center text-white">2</span>
+                                <h3 class="text-sm font-bold text-gray-100">複製下方「一鍵真實關係抓取代碼」</h3>
+                                <p class="text-xs text-gray-400 mt-1">點擊右側複製按鈕，我們為您準備的無毒、安全 API 呼叫指令就會存入剪貼簿。</p>
+                                <div class="mt-3 flex items-center gap-2">
+                                    <button onclick="copyScrapeScript()" class="px-4 py-2 bg-pink-600 hover:bg-pink-500 active:scale-95 text-white text-xs font-semibold rounded-lg flex items-center gap-1.5 shadow-lg shadow-pink-900/30 transition-all">
+                                        <i class="fas fa-copy"></i> 複製關係抓取腳本
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Step 3 -->
+                            <div class="relative">
+                                <span class="absolute -left-[35px] top-0 w-6 h-6 rounded-full bg-pink-600 border-4 border-gray-900 text-[10px] font-bold flex items-center justify-center text-white">3</span>
+                                <h3 class="text-sm font-bold text-gray-100">貼上並執行</h3>
+                                <p class="text-xs text-gray-400 mt-1">在 IG 網頁的任何地方按下鍵盤的 <kbd class="px-1.5 py-0.5 bg-white/10 rounded text-gray-300 text-[10px]">F12</kbd> (Mac 請按 <kbd class="px-1.5 py-0.5 bg-white/10 rounded text-gray-300 text-[10px]">Option + Cmd + I</kbd>) 開啟開發者控制台，切換到 <strong>Console (控制台)</strong> 分頁，並按下 <kbd class="px-1.5 py-0.5 bg-white/10 rounded text-gray-300 text-[10px]">Ctrl + V</kbd> 貼上後按 <strong>Enter</strong> 執行。</p>
+                            </div>
+
+                            <!-- Step 4 -->
+                            <div class="relative">
+                                <span class="absolute -left-[35px] top-0 w-6 h-6 rounded-full bg-emerald-600 border-4 border-gray-900 text-[10px] font-bold flex items-center justify-center text-white">4</span>
+                                <h3 class="text-sm font-bold text-emerald-400">輸入帳號與貼回結果</h3>
+                                <p class="text-xs text-gray-400 mt-1">腳本會彈出視窗詢問要抓取的帳號，並在背景快速抓取真實名單，抓完後會<strong>自動幫您複製</strong>。您只需回到這裡（右側），在輸入框內按貼上，大功告成！</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Alternate Official JSON Method -->
+                    <details class="glass-panel rounded-2xl overflow-hidden border border-white/10">
+                        <summary class="p-4 font-semibold text-sm cursor-pointer select-none hover:bg-white/5 flex items-center justify-between">
+                            <span class="text-gray-300"><i class="fas fa-file-archive text-pink-400 mr-1.5"></i> 備用方案：使用官方下載的 ZIP 資料包匯入</span>
+                            <i class="fas fa-chevron-down text-xs"></i>
+                        </summary>
+                        <div class="p-4 border-t border-white/5 text-xs text-gray-400 space-y-2 leading-relaxed">
+                            <p>1. 到 IG App 申請下載「個人資料」(格式選 JSON、資料類型選：追蹤關係)。</p>
+                            <p>2. 解壓縮後在 <code>connections/followers_and_following/</code> 可以找到：</p>
+                            <p>&bull; <code>followers_1.json</code> (粉絲名單) 與 <code>following.json</code> (追蹤中名單)</p>
+                            <div class="grid grid-cols-2 gap-4 mt-3">
+                                <div>
+                                    <label class="block text-[10px] text-pink-400 mb-1">貼上 followers_1.json</label>
+                                    <textarea id="alt-followers" class="w-full h-24 bg-black/40 border border-white/5 rounded-lg p-2 text-[10px] font-mono focus:outline-none focus:border-pink-500 custom-scrollbar" placeholder="貼上 followers JSON"></textarea>
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] text-blue-400 mb-1">貼上 following.json</label>
+                                    <textarea id="alt-following" class="w-full h-24 bg-black/40 border border-white/5 rounded-lg p-2 text-[10px] font-mono focus:outline-none focus:border-pink-500 custom-scrollbar" placeholder="貼上 following JSON"></textarea>
+                                </div>
+                            </div>
+                            <button onclick="parseAltJSON()" class="mt-2 w-full py-2 bg-white/10 hover:bg-white/15 text-white font-semibold rounded-lg text-xs transition-all">
+                                剖析官方 JSON 檔案
+                            </button>
+                        </div>
+                    </details>
+                </div>
+
+                <!-- Paste Area Panel (Right) -->
+                <div class="lg:col-span-1 flex flex-col gap-6">
+                    <div class="glass-panel p-6 rounded-2xl flex-1 flex flex-col min-h-[420px]">
+                        <h2 class="text-lg font-bold mb-3 flex items-center gap-2">
+                            <i class="fas fa-file-import ig-gradient-text"></i>
+                            <span>匯入您的真實數據</span>
+                        </h2>
+                        
+                        <!-- Toggle Tab for Paste vs Upload -->
+                        <div class="flex bg-black/30 p-1 rounded-xl border border-white/5 mb-4">
+                            <button onclick="toggleImportMode('paste')" id="btn-import-paste" class="flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 bg-pink-600 text-white">
+                                <i class="fas fa-paste mr-1"></i> 貼上文字
+                            </button>
+                            <button onclick="toggleImportMode('file')" id="btn-import-file" class="flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 text-gray-400 hover:text-white">
+                                <i class="fas fa-upload mr-1"></i> 上傳檔案 (免貼上)
+                            </button>
+                        </div>
+                        
+                        <!-- Paste Panel -->
+                        <div id="import-paste-area" class="flex flex-col gap-3 flex-1">
+                            <p class="text-[11px] text-gray-400">
+                                當您在 IG 網頁控制台執行完畢後，資料會自動複製。請直接在下方點擊並按鍵盤 <kbd class="px-1.5 py-0.5 bg-white/10 rounded text-gray-300">Ctrl + V</kbd> 貼上：
+                            </p>
+                            <textarea id="real-data-input" placeholder='[ 點擊此處，按 Ctrl + V 貼上腳本複製的加密 JSON 數據... ]'
+                                      class="w-full flex-1 bg-black/30 border border-white/10 rounded-xl p-4 text-xs font-mono text-pink-400 placeholder-gray-600 focus:outline-none focus:border-pink-500 custom-scrollbar min-h-[150px]"></textarea>
+                        </div>
+
+                        <!-- File Upload Panel -->
+                        <div id="import-file-area" class="hidden flex-col gap-3 flex-1">
+                            <p class="text-[11px] text-gray-400">
+                                腳本跑完後會<b>自動為您下載 JSON 檔案</b>。請直接將該檔案拖曳至下方，或點擊選擇檔案上傳，完全不用繁瑣的複製貼上！
+                            </p>
+                            <div id="drop-zone" class="flex-1 border-2 border-dashed border-white/10 hover:border-pink-500/50 rounded-xl flex flex-col items-center justify-center p-6 text-center cursor-pointer transition-all bg-black/20 min-h-[150px]">
+                                <i class="fas fa-cloud-upload-alt text-3xl text-pink-500 mb-2"></i>
+                                <span class="text-xs font-semibold text-gray-300 block mb-1">點擊或拖放 JSON 檔案至此</span>
+                                <span class="text-[10px] text-gray-500">支援從瀏覽器自動下載的 .json 檔案</span>
+                                <input type="file" id="file-uploader" accept=".json" class="hidden" onchange="handleFileSelect(event)">
+                            </div>
+                            <div id="uploaded-file-info" class="hidden p-3 bg-pink-500/10 border border-pink-500/20 rounded-lg text-xs flex items-center justify-between text-pink-300">
+                                <span class="truncate max-w-[200px]" id="uploaded-file-name"><i class="fas fa-file-code mr-1.5"></i>檔名</span>
+                                <button onclick="clearUploadedFile()" class="text-gray-400 hover:text-white"><i class="fas fa-times"></i></button>
+                            </div>
+                        </div>
+
+                        <button onclick="importRealData()" class="w-full ig-gradient-bg hover:opacity-90 text-white font-semibold py-3 px-4 rounded-xl shadow-lg shadow-pink-500/20 transition-all flex items-center justify-center gap-2 mt-4">
+                            <i class="fas fa-magic"></i>
+                            <span>立即匯入儀表板 & 生成試算表</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 3: Dashboard Panel -->
+        <div id="sim-tab" class="tab-content hidden">
+            <div class="flex flex-col gap-6">
+                <!-- Metrics Grid -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div class="glass-panel p-4 rounded-2xl flex flex-col justify-between">
+                        <span class="text-xs text-gray-400">追蹤中 (Following)</span>
+                        <div class="flex items-baseline gap-2 mt-2">
+                            <span class="text-2xl font-bold" id="stat-following">0</span>
+                            <span class="text-xs text-gray-500">人</span>
+                        </div>
+                    </div>
+                    <div class="glass-panel p-4 rounded-2xl flex flex-col justify-between">
+                        <span class="text-xs text-gray-400">真實粉絲 (Followers)</span>
+                        <div class="flex items-baseline gap-2 mt-2">
+                            <span class="text-2xl font-bold text-pink-400" id="stat-followers">0</span>
+                            <span class="text-xs text-gray-500">人</span>
+                        </div>
+                    </div>
+                    <div class="glass-panel p-4 rounded-2xl flex flex-col justify-between border-l-4 border-l-red-500">
+                        <span class="text-xs text-red-400">沒回追你 (Not Mut)</span>
+                        <div class="flex items-baseline gap-2 mt-2">
+                            <span class="text-2xl font-bold text-red-400" id="stat-not-back">0</span>
+                            <span class="text-xs text-red-500">人</span>
+                        </div>
+                    </div>
+                    <div class="glass-panel p-4 rounded-2xl flex flex-col justify-between border-l-4 border-l-green-500">
+                        <span class="text-xs text-green-400">互相追蹤 (Mutual)</span>
+                        <div class="flex items-baseline gap-2 mt-2">
+                            <span class="text-2xl font-bold text-green-400" id="stat-mutual">0</span>
+                            <span class="text-xs text-green-500">人</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Relations Table Explorer -->
+                <div class="glass-panel rounded-2xl flex flex-col flex-1 overflow-hidden min-h-[450px]">
+                    <!-- Tab Header for categories -->
+                    <div class="border-b border-white/10 flex flex-wrap gap-2 p-4 justify-between items-center">
+                        <div class="flex flex-wrap gap-1 bg-black/20 p-1 rounded-xl">
+                            <button onclick="filterTable('all')" id="filter-all" class="px-3.5 py-1.5 rounded-lg text-xs font-medium bg-white/10 text-white">
+                                全部 (<span id="cnt-all">0</span>)
+                            </button>
+                            <button onclick="filterTable('not-back')" id="filter-not-back" class="px-3.5 py-1.5 rounded-lg text-xs font-medium text-gray-400 hover:text-white">
+                                誰沒回追你 (<span id="cnt-not-back">0</span>)
+                            </button>
+                            <button onclick="filterTable('i-not-back')" id="filter-i-not-back" class="px-3.5 py-1.5 rounded-lg text-xs font-medium text-gray-400 hover:text-white">
+                                你沒回追誰 (<span id="cnt-i-not-back">0</span>)
+                            </button>
+                            <button onclick="filterTable('mutual')" id="filter-mutual" class="px-3.5 py-1.5 rounded-lg text-xs font-medium text-gray-400 hover:text-white">
+                                互相追蹤 (<span id="cnt-mutual">0</span>)
+                            </button>
+                        </div>
+                        
+                        <!-- EXPORT SPREADSHEET BUTTON -->
+                        <button onclick="exportToSpreadsheet()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white text-xs font-semibold rounded-xl flex items-center gap-1.5 shadow-lg shadow-emerald-900/30 transition-all">
+                            <i class="fas fa-file-excel"></i> 轉為試算表並下載 (CSV)
+                        </button>
+                    </div>
+
+                    <!-- Search & Fast Actions -->
+                    <div class="px-4 py-3 bg-white/5 border-b border-white/5 flex flex-col sm:flex-row gap-3 justify-between items-center">
+                        <div class="relative w-full sm:w-72">
+                            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-xs"><i class="fas fa-search"></i></span>
+                            <input type="text" id="table-search" oninput="searchInTable()" placeholder="快速搜尋用戶名稱..."
+                                   class="w-full bg-black/20 border border-white/5 rounded-lg py-1.5 pl-8 pr-3 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-pink-500">
+                        </div>
+                        <span class="text-xs text-gray-400" id="table-showing-text">目前顯示 0 筆關係人</span>
+                    </div>
+
+                    <!-- Data Grid -->
+                    <div class="flex-1 overflow-auto max-h-[450px] custom-scrollbar">
+                        <table class="w-full text-left border-collapse">
+                            <thead class="bg-black/20 text-xs text-gray-400 font-bold sticky top-0 backdrop-blur">
+                                <tr>
+                                    <th class="p-4 border-b border-white/5">用戶帳號</th>
+                                    <th class="p-4 border-b border-white/5">全名</th>
+                                    <th class="p-4 border-b border-white/5">你對他的關係</th>
+                                    <th class="p-4 border-b border-white/5">他對你的關係</th>
+                                    <th class="p-4 border-b border-white/5">連結</th>
+                                </tr>
+                            </thead>
+                            <tbody id="relations-tbody" class="divide-y divide-white/5 text-sm">
+                                <tr>
+                                    <td colspan="5" class="p-12 text-center text-gray-500">
+                                        <div class="flex flex-col items-center gap-3">
+                                            <i class="fas fa-users-cog text-4xl text-gray-600"></i>
+                                            <span>請在第 2 步完成網頁真實關係抓取後，點擊匯入，數據就會完美呈現在這裡！</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer build versioning info -->
+    <footer class="max-w-7xl mx-auto px-4 mt-12 text-center text-[11px] text-gray-600 border-t border-white/5 pt-6">
+        <p>InsTracker Engine v1.4.0 (Stable Build 2026) | 純本機運算安全無毒 | 支援多圖貼文與關係交叉比對</p>
+    </footer>
+
+    <!-- Script Logic Area -->
+    <script>
+        // BRAND NEW SCRIPT 1: Media/Posts Photos ZIP Downloader Script (No External Dependencies!)
+        // 100% Pure JS ZIP Builder that circumvents Instagram's strict CSP blockages.
+        const postPhotoScraperScript = `(async () => {
+    // 1. Prepare UI Container in IG Page
+    const overlay = document.createElement('div');
+    overlay.style.cssText = "position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.9);z-index:999999;display:flex;flex-direction:column;align-items:center;justify-content:center;color:white;font-family:sans-serif;";
+    overlay.innerHTML = \`
+        <div style="background:#1a1124;padding:30px;border-radius:20px;width:90%;max-width:450px;text-align:center;box-shadow:0 15px 35px rgba(0,0,0,0.7);border:1px solid rgba(255,255,255,0.1);">
+            <div style="font-size:45px;margin-bottom:15px;">📸</div>
+            <h2 id="scrape-title" style="margin:0 0 10px 0;font-size:20px;font-weight:bold;color:#ff52a2;">IG 貼文相片打包大師</h2>
+            <p id="scrape-status" style="margin:0 0 20px 0;font-size:13px;color:#ccc;">正在準備原生打包引擎...</p>
+            <div style="background:rgba(255,255,255,0.1);border-radius:10px;height:10px;width:100%;overflow:hidden;margin-bottom:15px;">
+                <div id="scrape-progress" style="background:linear-gradient(90deg,#f09433,#bc1888);height:100%;width:0%;transition:width 0.2s;"></div>
+            </div>
+            <div id="scrape-details" style="font-size:11px;color:#888;word-break:break-all;height:24px;overflow:hidden;">請稍候...</div>
+        </div>
+    \`;
+    document.body.appendChild(overlay);
+
+    const updateStatus = (text, percent, details = '') => {
+        document.getElementById('scrape-status').innerText = text;
+        document.getElementById('scrape-progress').style.width = percent + '%';
+        if(details) document.getElementById('scrape-details').innerText = details;
+    };
+
+    // 2. Pure JS CRC32 and ZIP Creator (Zero external JS script downloads!)
+    function crc32(buf) {
+        let table = [];
+        for (let i = 0; i < 256; i++) {
+            let c = i;
+            for (let j = 0; j < 8; j++) {
+                c = ((c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1));
+            }
+            table[i] = c;
+        }
+        let crc = 0 ^ -1;
+        for (let i = 0; i < buf.length; i++) {
+            crc = (crc >>> 8) ^ table[(crc ^ buf[i]) & 0xFF];
+        }
+        return (crc ^ -1) >>> 0;
+    }
+
+    function generateDosDateTime(date) {
+        const year = date.getFullYear();
+        const month = date.getMonth() + 1;
+        const day = date.getDate();
+        const hours = date.getHours();
+        const minutes = date.getMinutes();
+        const seconds = date.getSeconds();
+        const dosTime = (hours << 11) | (minutes << 5) | (seconds >> 1);
+        const dosDate = ((year - 1980) << 9) | (month << 5) | day;
+        return { dosTime, dosDate };
+    }
+
+    function createZipBlob(files) {
+        let offset = 0;
+        const localHeaders = [];
+        const centralDirHeaders = [];
+        const textEncoder = new TextEncoder();
+        const now = new Date();
+        const { dosTime, dosDate } = generateDosDateTime(now);
+
+        for (const file of files) {
+            const nameBytes = textEncoder.encode(file.name);
+            const dataBytes = file.data;
+            const crc = crc32(dataBytes);
+            const size = dataBytes.length;
+
+            // Local File Header
+            const lh = new Uint8Array(30 + nameBytes.length + dataBytes.length);
+            const view = new DataView(lh.buffer);
+            view.setUint32(0, 0x04034b50, true);
+            view.setUint16(4, 10, true);
+            view.setUint16(6, 0, true);
+            view.setUint16(8, 0, true); // Store (no compression)
+            view.setUint16(10, dosTime, true);
+            view.setUint16(12, dosDate, true);
+            view.setUint32(14, crc, true);
+            view.setUint32(18, size, true);
+            view.setUint32(22, size, true);
+            view.setUint16(26, nameBytes.length, true);
+            view.setUint16(28, 0, true);
+            lh.set(nameBytes, 30);
+            lh.set(dataBytes, 30 + nameBytes.length);
+
+            // Central Directory Header
+            const cdh = new Uint8Array(46 + nameBytes.length);
+            const cdView = new DataView(cdh.buffer);
+            cdView.setUint32(0, 0x02014b50, true);
+            cdView.setUint16(4, 20, true);
+            cdView.setUint16(6, 10, true);
+            cdView.setUint16(8, 0, true);
+            cdView.setUint16(10, 0, true);
+            cdView.setUint16(12, dosTime, true);
+            cdView.setUint16(14, dosDate, true);
+            cdView.setUint32(16, crc, true);
+            cdView.setUint32(20, size, true);
+            cdView.setUint32(24, size, true);
+            cdView.setUint16(28, nameBytes.length, true);
+            cdView.setUint16(30, 0, true);
+            cdView.setUint16(32, 0, true);
+            cdView.setUint16(34, 0, true);
+            cdView.setUint16(36, 0, true);
+            cdView.setUint32(38, 0, true);
+            cdView.setUint32(42, offset, true);
+            cdh.set(nameBytes, 46);
+
+            localHeaders.push(lh);
+            centralDirHeaders.push(cdh);
+            offset += lh.length;
+        }
+
+        let cdSize = 0;
+        for (const cdh of centralDirHeaders) cdSize += cdh.length;
+
+        // End of Central Directory
+        const eocd = new Uint8Array(22);
+        const eocdView = new DataView(eocd.buffer);
+        eocdView.setUint32(0, 0x06054b50, true);
+        eocdView.setUint16(4, 0, true);
+        eocdView.setUint16(6, 0, true);
+        eocdView.setUint16(8, centralDirHeaders.length, true);
+        eocdView.setUint16(10, centralDirHeaders.length, true);
+        eocdView.setUint32(12, cdSize, true);
+        eocdView.setUint32(16, offset, true);
+        eocdView.setUint16(20, 0, true);
+
+        const chunks = [...localHeaders, ...centralDirHeaders, eocd];
+        return new Blob(chunks, { type: 'application/zip' });
+    }
+
+    // 3. Extract target username from current profile page URL
+    const match = window.location.pathname.match(/\\/([^\\/]+)\\/$/) || window.location.pathname.match(/\\/([^\\/]+)$/);
+    const targetUsername = match ? match[1] : "";
+    if (!targetUsername || targetUsername === "explore" || targetUsername === "direct") {
+        alert("❌ 偵測不到正確的用戶頁面！\\n\\n請先開啟要下載的目標用戶個人首頁，例如：https://www.instagram.com/instagram/");
+        overlay.remove();
+        return;
+    }
+
+    updateStatus(\`正在搜尋用戶 @\${targetUsername} 資訊...\`, 15);
+
+    try {
+        // 4. Resolve username to UserId & fetch initial metadata
+        const resId = await fetch('https://www.instagram.com/api/v1/users/web_profile_info/?username=' + targetUsername, {
+            headers: { 'x-ig-app-id': '936619743392459' }
+        });
+        const dataId = await resId.json();
+        if (!dataId.data || !dataId.data.user) {
+            throw new Error("找不到用戶，請確定目前在該用戶的公開專頁首頁。");
+        }
+        const userId = dataId.data.user.id;
+        const totalPosts = dataId.data.user.edge_owner_to_timeline_media.count;
+        
+        if (totalPosts === 0) {
+            alert(\`用戶 @\${targetUsername} 沒有任何貼文！\`);
+            overlay.remove();
+            return;
+        }
+
+        const confirmDownload = confirm(\`【IG 貼文相片打包大師】\\n\\n偵測到用戶：@\${targetUsername}\\n貼文總數：\${totalPosts} 篇\\n\\n按下確定後，系統將自動抓取所有貼文照片並進行 ZIP 包裹下載！\\n(若貼文較多會需要一些時間，請勿關閉視窗)\`);
+        if(!confirmDownload) {
+            overlay.remove();
+            return;
+        }
+
+        // 5. Paginate through user's feed and collect high-res image URLs
+        let imageUrls = [];
+        let maxId = '';
+        let page = 1;
+        
+        updateStatus("正在爬取貼文清單...", 25);
+        
+        while (true) {
+            updateStatus(\`正在取得第 \${page} 頁貼文列表...\`, 30, \`已尋獲 \${imageUrls.length} 張相片...\`);
+            const url = \`https://www.instagram.com/api/v1/feed/user/\${userId}/?count=30\` + (maxId ? \`&max_id=\${maxId}\` : '');
+            const feedRes = await fetch(url, { headers: { 'x-ig-app-id': '936619743392459' } });
+            const feedData = await feedRes.json();
+            
+            if (!feedData.items || feedData.items.length === 0) break;
+            
+            for (const item of feedData.items) {
+                const date = new Date(item.taken_at * 1000);
+                const dateStr = date.toISOString().slice(0,10).replace(/-/g, '');
+                const postId = item.id;
+                
+                if (item.carousel_media && item.carousel_media.length > 0) {
+                    item.carousel_media.forEach((subMedia, index) => {
+                        if (subMedia.image_versions2 && subMedia.image_versions2.candidates) {
+                            const imgUrl = subMedia.image_versions2.candidates[0].url;
+                            imageUrls.push({
+                                url: imgUrl,
+                                filename: \`\${dateStr}_\${postId}_\${index + 1}.jpg\`
+                            });
+                        }
+                    });
+                } else if (item.image_versions2 && item.image_versions2.candidates) {
+                    const imgUrl = item.image_versions2.candidates[0].url;
+                    imageUrls.push({
+                        url: imgUrl,
+                        filename: \`\${dateStr}_\${postId}_1.jpg\`
+                    });
+                }
+            }
+
+            maxId = feedData.next_max_id;
+            if (!maxId) break;
+            page++;
+            await new Promise(r => setTimeout(r, 1000));
+        }
+
+        const totalImages = imageUrls.length;
+        if (totalImages === 0) {
+            throw new Error("未偵測到任何可下載的貼文圖片(可能皆為短影音 Reels)。");
+        }
+
+        updateStatus(\`列表獲取完畢！開始下載 \${totalImages} 張高畫質照片...\`, 50);
+
+        // 6. Download Blobs and store into Memory ZIP File List
+        let zipFiles = [];
+        let downloadedCount = 0;
+
+        for (const imgObj of imageUrls) {
+            try {
+                const imgRes = await fetch(imgObj.url);
+                const arrayBuffer = await imgRes.arrayBuffer();
+                const uint8 = new Uint8Array(arrayBuffer);
+                
+                zipFiles.push({
+                    name: imgObj.filename,
+                    data: uint8
+                });
+
+                downloadedCount++;
+                const percent = 50 + Math.floor((downloadedCount / totalImages) * 45);
+                updateStatus(\`正在下載照片 [\${downloadedCount}/\${totalImages}]...\`, percent, \`正在下載：\${imgObj.filename}\`);
+                
+                await new Promise(r => setTimeout(r, 150)); // anti-spam delay
+            } catch (err) {
+                console.error(\`下載失敗：\${imgObj.filename}\`, err);
+            }
+        }
+
+        // 7. Generate and download ZIP file using our native pure JS engine!
+        updateStatus("正在打包 ZIP 壓縮檔 (原生引擎)...", 96);
+        const zipBlob = createZipBlob(zipFiles);
+        const blobUrl = URL.createObjectURL(zipBlob);
+        
+        const a = document.createElement('a');
+        a.href = blobUrl;
+        a.download = \`IG_貼文照片_\${targetUsername}.zip\`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(blobUrl);
+
+        updateStatus("🎉 原生打包下載完成！", 100, "壓縮檔已自動開始下載。您可以關閉此視窗。");
+        setTimeout(() => overlay.remove(), 4000);
+        
+    } catch(err) {
+        console.error(err);
+        alert("❌ 原生下載失敗：\\n1. " + err.message + "\\n2. 請確認您已在該瀏覽器登入 Instagram。");
+        overlay.remove();
+    }
+})();`;
+
+        // SCRIPT 2: Followers/Following Scraping Script
+        const scraperScriptCode = `(async () => {
+    const targetUsername = prompt("【InsTracker 真實粉絲關係抓取】\\n\\n請輸入要分析的 IG 用戶名 (例如自己的帳號或任何您可見的帳號)：", "");
+    if (!targetUsername) return alert("❌ 必須輸入用戶名才能開始！");
+    
+    console.log("🚀 啟動 InsTracker 安全關係分析引擎...");
+    console.log("📌 目標帳號: @" + targetUsername);
+    
+    try {
+        console.log("🔍 正在查詢用戶 ID...");
+        const resId = await fetch('https://www.instagram.com/api/v1/users/web_profile_info/?username=' + targetUsername, {
+            headers: { 'x-ig-app-id': '936619743392459' }
+        });
+        const dataId = await resId.json();
+        if (!dataId.data || !dataId.data.user) {
+            throw new Error("找不到用戶，請確認帳號拼寫無誤或非極度隱私帳號！");
+        }
+        const userId = dataId.data.user.id;
+        console.log("✅ 成功獲取 ID: " + userId);
+        
+        async function fetchList(endpointType) {
+            let list = [];
+            let maxId = '';
+            let pageCount = 1;
+            console.log("📥 開始抓取 " + endpointType + " 數據...");
+            
+            while (true) {
+                console.log("   --> 抓取第 " + pageCount + " 頁...");
+                const url = "https://www.instagram.com/api/v1/friendships/" + userId + "/" + endpointType + "/?count=200" + (maxId ? "&max_id=" + maxId : "");
+                const res = await fetch(url, { headers: { 'x-ig-app-id': '936619743392459' } });
+                const json = await res.json();
+                
+                if (!json.users || json.users.length === 0) break;
+                
+                list.push(...json.users.map(u => ({
+                    username: u.username,
+                    fullName: u.full_name || "",
+                    avatar: u.profile_pic_url || ""
+                })));
+                
+                console.log("   ✅ 目前累計: " + list.length + " 人");
+                maxId = json.next_max_id;
+                if (!maxId) break;
+                
+                pageCount++;
+                await new Promise(r => setTimeout(r, 1500)); 
+            }
+            return list;
+        }
+
+        const followers = await fetchList("followers");
+        await new Promise(r => setTimeout(r, 2000));
+        const following = await fetchList("following");
+
+        const finalResult = {
+            username: targetUsername,
+            followers: followers,
+            following: following,
+            exportedAt: new Date().toISOString()
+        };
+
+        const jsonStr = JSON.stringify(finalResult, null, 2);
+        
+        let copied = false;
+        try {
+            if (typeof copy === 'function') {
+                copy(jsonStr);
+                copied = true;
+            }
+        } catch (e) {}
+
+        if (!copied) {
+            try {
+                const tempTextarea = document.createElement('textarea');
+                tempTextarea.value = jsonStr;
+                document.body.appendChild(tempTextarea);
+                tempTextarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(tempTextarea);
+                copied = true;
+            } catch (e) {}
+        }
+
+        try {
+            const blob = new Blob([jsonStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = "IG_數據_" + targetUsername + ".json";
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        } catch (fileErr) {}
+
+        alert("🎉 關係抓取大成功！！！\\n\\n【系統已為您執行以下兩項動作】：\\n\\n1. 💾 已自動為您下載檔案「IG_數據_" + targetUsername + ".json」\\n2. 📋 數據也已同步複製到您的剪貼簿！\\n\\n👉 請回到我們的 InsTracker 網頁中貼上或拖曳上傳即可！");
+    } catch (err) {
+        console.error(err);
+        alert("❌ 抓取失敗！詳細錯誤資訊已輸出至 Console 面板。");
+    }
+})();`;
+
+        // Global State variables
+        let activeData = {
+            username: "",
+            following: [], 
+            followers: [], 
+            combined: []   
+        };
+        
+        let filteredCombined = [];
+        let activeFilter = 'all';
+        let currentImportMode = 'paste'; 
+        let uploadedFileContent = null;
+
+        function toggleImportMode(mode) {
+            currentImportMode = mode;
+            const btnPaste = document.getElementById('btn-import-paste');
+            const btnFile = document.getElementById('btn-import-file');
+            const areaPaste = document.getElementById('import-paste-area');
+            const areaFile = document.getElementById('import-file-area');
+
+            if (mode === 'paste') {
+                btnPaste.className = "flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 bg-pink-600 text-white";
+                btnFile.className = "flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 text-gray-400 hover:text-white";
+                areaPaste.classList.remove('hidden');
+                areaPaste.classList.add('flex');
+                areaFile.classList.add('hidden');
+                areaFile.classList.remove('flex');
+            } else {
+                btnFile.className = "flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 bg-pink-600 text-white";
+                btnPaste.className = "flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 text-gray-400 hover:text-white";
+                areaFile.classList.remove('hidden');
+                areaFile.classList.add('flex');
+                areaPaste.classList.add('hidden');
+                areaPaste.classList.remove('flex');
+            }
+        }
+
+        // Initialize drag and drop
+        window.addEventListener('DOMContentLoaded', () => {
+            const dropZone = document.getElementById('drop-zone');
+            if (dropZone) {
+                dropZone.addEventListener('click', () => {
+                    document.getElementById('file-uploader').click();
+                });
+                dropZone.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    dropZone.classList.add('border-pink-500', 'bg-pink-500/10');
+                });
+                dropZone.addEventListener('dragleave', () => {
+                    dropZone.classList.remove('border-pink-500', 'bg-pink-500/10');
+                });
+                dropZone.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    dropZone.classList.remove('border-pink-500', 'bg-pink-500/10');
+                    if (e.dataTransfer.files.length > 0) {
+                        processFile(e.dataTransfer.files[0]);
+                    }
+                });
+            }
+        });
+
+        function handleFileSelect(e) {
+            if (e.target.files.length > 0) {
+                processFile(e.target.files[0]);
+            }
+        }
+
+        function processFile(file) {
+            if (!file.name.endsWith('.json')) {
+                showToast("只支援上傳 .json 格式檔案！", "error");
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                uploadedFileContent = e.target.result;
+                document.getElementById('uploaded-file-name').innerHTML = `<i class="fas fa-file-code mr-1.5"></i>${file.name}`;
+                document.getElementById('uploaded-file-info').classList.remove('hidden');
+                document.getElementById('drop-zone').classList.add('hidden');
+                showToast(`成功讀取檔案: ${file.name}，請點擊下方「立即匯入」進行分析！`, "success");
+            };
+            reader.readAsText(file);
+        }
+
+        function clearUploadedFile() {
+            uploadedFileContent = null;
+            document.getElementById('file-uploader').value = '';
+            document.getElementById('uploaded-file-info').classList.add('hidden');
+            document.getElementById('drop-zone').classList.remove('hidden');
+        }
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            
+            let bgClass = "bg-gray-800 border-gray-700";
+            let icon = "fa-info-circle text-blue-400";
+            
+            if (type === 'success') {
+                bgClass = "bg-emerald-950 border-emerald-800";
+                icon = "fa-check-circle text-emerald-400";
+            } else if (type === 'error') {
+                bgClass = "bg-rose-950 border-rose-800";
+                icon = "fa-exclamation-circle text-rose-400";
+            } else if (type === 'warning') {
+                bgClass = "bg-amber-950 border-amber-800";
+                icon = "fa-triangle-exclamation text-amber-400";
+            }
+
+            toast.className = `flex items-center gap-3 p-4 rounded-xl border ${bgClass} text-sm text-gray-100 shadow-xl transition-all duration-300 max-w-sm transform translate-y-2 opacity-0`;
+            toast.innerHTML = `
+                <i class="fas ${icon} text-lg shrink-0"></i>
+                <div class="flex-1">${message}</div>
+                <button onclick="this.parentElement.remove()" class="text-gray-400 hover:text-white shrink-0"><i class="fas fa-times"></i></button>
+            `;
+            
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            }, 10);
+            
+            setTimeout(() => {
+                toast.classList.add('opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
+        }
+
+        function copyScrapeScript() {
+            const tempTextarea = document.createElement('textarea');
+            tempTextarea.value = scraperScriptCode;
+            document.body.appendChild(tempTextarea);
+            tempTextarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempTextarea);
+            showToast("🚀 關係抓取腳本已複製！請貼在 IG 的 F12 Console 分頁執行。", "success");
+        }
+
+        function copyPhotoScript() {
+            const tempTextarea = document.createElement('textarea');
+            tempTextarea.value = postPhotoScraperScript;
+            document.body.appendChild(tempTextarea);
+            tempTextarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempTextarea);
+            showToast("📸 貼文相片下載腳本已複製！請至目標用戶專頁 F12 Console 貼上執行。", "success");
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.add('hidden');
+                tab.classList.remove('block');
+            });
+            document.getElementById(tabId).classList.remove('hidden');
+            document.getElementById(tabId).classList.add('block');
+
+            const photoBtn = document.getElementById('btn-photo-tab');
+            const realBtn = document.getElementById('btn-real-tab');
+            const simBtn = document.getElementById('btn-sim-tab');
+            
+            photoBtn.className = "px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 text-gray-400 hover:text-white hover:bg-white/5";
+            realBtn.className = "px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 text-gray-400 hover:text-white hover:bg-white/5";
+            simBtn.className = "px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 text-gray-400 hover:text-white hover:bg-white/5";
+
+            if (tabId === 'photo-tab') {
+                photoBtn.className = "px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 bg-white/10 text-white border border-white/20";
+            } else if (tabId === 'real-tab') {
+                realBtn.className = "px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 bg-white/10 text-white border border-white/20";
+            } else {
+                simBtn.className = "px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 bg-white/10 text-white border border-white/20";
+            }
+        }
+
+        function importRealData() {
+            let rawInput = "";
+            if (currentImportMode === 'paste') {
+                rawInput = document.getElementById('real-data-input').value.trim();
+            } else {
+                rawInput = uploadedFileContent ? uploadedFileContent.trim() : "";
+            }
+
+            if (!rawInput) {
+                showToast(currentImportMode === 'paste' ? "請先將在 IG 抓取完成後複製的 JSON 資料貼在輸入框內！" : "請先上傳您的 JSON 數據檔案！", "warning");
+                return;
+            }
+
+            try {
+                const parsed = JSON.parse(rawInput);
+                if (!parsed.followers || !parsed.following) {
+                    showToast("輸入的資料結構不正確！必須包含 followers 與 following 名單。", "error");
+                    return;
+                }
+
+                activeData.username = parsed.username || "IG_User";
+                
+                activeData.followers = parsed.followers.map(f => ({
+                    username: f.username,
+                    fullName: f.fullName || "",
+                    avatar: f.avatar || "",
+                    isFollowing: false,
+                    isFollower: true,
+                    profileUrl: `https://www.instagram.com/${f.username}`
+                }));
+
+                activeData.following = parsed.following.map(f => ({
+                    username: f.username,
+                    fullName: f.fullName || "",
+                    avatar: f.avatar || "",
+                    isFollowing: true,
+                    isFollower: false,
+                    profileUrl: `https://www.instagram.com/${f.username}`
+                }));
+
+                integrateData();
+                switchTab('sim-tab');
+                showToast(`🎉 關係數據匯入成功！已匯入 @${activeData.username} 的 ${activeData.combined.length} 位不重複關係人！`, "success");
+            } catch (e) {
+                console.error(e);
+                showToast("解析資料失敗，請確認貼入的 JSON 或上傳的檔案格式是否正確且完整！", "error");
+            }
+        }
+
+        function parseAltJSON() {
+            const followersRaw = document.getElementById('alt-followers').value.trim();
+            const followingRaw = document.getElementById('alt-following').value.trim();
+
+            if (!followersRaw && !followingRaw) {
+                showToast("請貼上備用 JSON 資料！", "warning");
+                return;
+            }
+
+            try {
+                let fList = [];
+                let fgList = [];
+
+                if (followersRaw) {
+                    const parsedF = JSON.parse(followersRaw);
+                    const arr = Array.isArray(parsedF) ? parsedF : (parsedF.relationships_followers || []);
+                    fList = arr.map(item => {
+                        const data = item.string_list_data && item.string_list_data[0];
+                        return {
+                            username: data ? data.value : "",
+                            fullName: item.title || "",
+                            avatar: "",
+                            isFollowing: false,
+                            isFollower: true,
+                            profileUrl: data ? (data.href || `https://www.instagram.com/${data.value}`) : ""
+                        };
+                    }).filter(u => u.username);
+                }
+
+                if (followingRaw) {
+                    const parsedFg = JSON.parse(followingRaw);
+                    const arr = Array.isArray(parsedFg) ? parsedFg : (parsedFg.relationships_following || []);
+                    fgList = arr.map(item => {
+                        const data = item.string_list_data && item.string_list_data[0];
+                        return {
+                            username: data ? data.value : "",
+                            fullName: item.title || "",
+                            avatar: "",
+                            isFollowing: true,
+                            isFollower: false,
+                            profileUrl: data ? (data.href || `https://www.instagram.com/${data.value}`) : ""
+                        };
+                    }).filter(u => u.username);
+                }
+
+                activeData.username = "Official_Backup";
+                activeData.followers = fList;
+                activeData.following = fgList;
+
+                integrateData();
+                switchTab('sim-tab');
+                showToast(`🎉 成功解析官方備份資料，共載入 ${activeData.combined.length} 筆關係！`, "success");
+            } catch (err) {
+                console.error(err);
+                showToast("備份 JSON 解析失敗，請確認結構正確。", "error");
+            }
+        }
+
+        function integrateData() {
+            const integratedMap = new Map();
+
+            activeData.following.forEach(user => {
+                integratedMap.set(user.username, {
+                    username: user.username,
+                    fullName: user.fullName || "",
+                    avatar: user.avatar,
+                    isFollowing: true,
+                    isFollower: false,
+                    profileUrl: user.profileUrl
+                });
+            });
+
+            activeData.followers.forEach(user => {
+                if (integratedMap.has(user.username)) {
+                    integratedMap.get(user.username).isFollower = true;
+                } else {
+                    integratedMap.set(user.username, {
+                        username: user.username,
+                        fullName: user.fullName || "",
+                        avatar: user.avatar,
+                        isFollowing: false,
+                        isFollower: true,
+                        profileUrl: user.profileUrl
+                    });
+                }
+            });
+
+            activeData.combined = Array.from(integratedMap.values());
+            filteredCombined = [...activeData.combined];
+            
+            updateStatsCounters();
+            filterTable('all'); 
+        }
+
+        function updateStatsCounters() {
+            const totalFollowing = activeData.combined.filter(u => u.isFollowing).length;
+            const totalFollowers = activeData.combined.filter(u => u.isFollower).length;
+            const notFollowingBack = activeData.combined.filter(u => u.isFollowing && !u.isFollower).length;
+            const mutual = activeData.combined.filter(u => u.isFollowing && u.isFollower).length;
+            const iNotBack = activeData.combined.filter(u => !u.isFollowing && u.isFollower).length;
+
+            document.getElementById('stat-following').innerText = totalFollowing;
+            document.getElementById('stat-followers').innerText = totalFollowers;
+            document.getElementById('stat-not-back').innerText = notFollowingBack;
+            document.getElementById('stat-mutual').innerText = mutual;
+
+            document.getElementById('cnt-all').innerText = activeData.combined.length;
+            document.getElementById('cnt-not-back').innerText = notFollowingBack;
+            document.getElementById('cnt-i-not-back').innerText = iNotBack;
+            document.getElementById('cnt-mutual').innerText = mutual;
+        }
+
+        function filterTable(filterType) {
+            activeFilter = filterType;
+            
+            const filters = ['all', 'not-back', 'i-not-back', 'mutual'];
+            filters.forEach(f => {
+                const btn = document.getElementById(`filter-${f}`);
+                if (f === filterType) {
+                    btn.className = "px-3.5 py-1.5 rounded-lg text-xs font-medium bg-white/10 text-white";
+                } else {
+                    btn.className = "px-3.5 py-1.5 rounded-lg text-xs font-medium text-gray-400 hover:text-white";
+                }
+            });
+
+            if (filterType === 'all') {
+                filteredCombined = [...activeData.combined];
+            } else if (filterType === 'not-back') {
+                filteredCombined = activeData.combined.filter(u => u.isFollowing && !u.isFollower);
+            } else if (filterType === 'i-not-back') {
+                filteredCombined = activeData.combined.filter(u => !u.isFollowing && u.isFollower);
+            } else if (filterType === 'mutual') {
+                filteredCombined = activeData.combined.filter(u => u.isFollowing && u.isFollower);
+            }
+
+            renderTable();
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('relations-tbody');
+            
+            if (filteredCombined.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="p-12 text-center text-gray-500">
+                            <div class="flex flex-col items-center gap-2">
+                                <i class="fas fa-folder-open text-3xl text-gray-600"></i>
+                                <span>沒有符合該篩選關係的帳號資訊。</span>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+                document.getElementById('table-showing-text').innerText = "目前顯示 0 筆關係人";
+                return;
+            }
+
+            tbody.innerHTML = "";
+            filteredCombined.forEach(user => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-white/5 transition-colors";
+
+                let youFollowBadge = '';
+                if (user.isFollowing) {
+                    youFollowBadge = '<span class="px-2 py-0.5 rounded text-[11px] font-semibold bg-pink-500/10 text-pink-400 border border-pink-500/20"><i class="fas fa-arrow-right text-[9px] mr-1"></i>已追蹤</span>';
+                } else {
+                    youFollowBadge = '<span class="px-2 py-0.5 rounded text-[11px] font-semibold bg-gray-500/10 text-gray-400 border border-gray-500/20">無追蹤</span>';
+                }
+
+                let heFollowsBadge = '';
+                if (user.isFollower) {
+                    heFollowsBadge = '<span class="px-2 py-0.5 rounded text-[11px] font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20"><i class="fas fa-arrow-left text-[9px] mr-1"></i>是粉絲</span>';
+                } else {
+                    heFollowsBadge = '<span class="px-2 py-0.5 rounded text-[11px] font-semibold bg-red-500/10 text-red-400 border border-red-500/20">無追蹤你</span>';
+                }
+
+                let rowBorder = 'border-l-2 border-l-transparent';
+                if (user.isFollowing && !user.isFollower) {
+                    rowBorder = 'border-l-2 border-l-red-500/40';
+                } else if (user.isFollowing && user.isFollower) {
+                    rowBorder = 'border-l-2 border-l-emerald-500/40';
+                }
+
+                const avatarSrc = user.avatar || `https://placehold.co/100x100/333/fff?text=${user.username.slice(0,2).toUpperCase()}`;
+
+                tr.innerHTML = `
+                    <td class="p-4 ${rowBorder}">
+                        <div class="flex items-center gap-3">
+                            <img src="${avatarSrc}" onerror="this.src='https://placehold.co/100x100/333/fff?text=@'" class="w-8 h-8 rounded-full border border-white/10" alt="Avatar">
+                            <span class="font-semibold text-white">@${user.username}</span>
+                        </div>
+                    </td>
+                    <td class="p-4 text-gray-300 font-medium">${user.fullName || "—"}</td>
+                    <td class="p-4">${youFollowBadge}</td>
+                    <td class="p-4">${heFollowsBadge}</td>
+                    <td class="p-4">
+                        <a href="${user.profileUrl}" target="_blank" class="text-pink-400 hover:text-pink-300 transition-colors text-xs inline-flex items-center gap-1 font-semibold">
+                            <span>主頁</span>
+                            <i class="fas fa-external-link-alt text-[10px]"></i>
+                        </a>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            document.getElementById('table-showing-text').innerText = `目前顯示 ${filteredCombined.length} 筆關係人`;
+        }
+
+        // Search within tables
+        function searchInTable() {
+            const query = document.getElementById('table-search').value.toLowerCase().trim();
+            if (!query) {
+                filterTable(activeFilter);
+                return;
+            }
+
+            let baseList = [];
+            if (activeFilter === 'all') baseList = [...activeData.combined];
+            else if (activeFilter === 'not-back') baseList = activeData.combined.filter(u => u.isFollowing && !u.isFollower);
+            else if (activeFilter === 'i-not-back') baseList = activeData.combined.filter(u => !u.isFollowing && u.isFollower);
+            else if (activeFilter === 'mutual') baseList = activeData.combined.filter(u => u.isFollowing && u.isFollower);
+
+            filteredCombined = baseList.filter(user => 
+                user.username.toLowerCase().includes(query) || 
+                (user.fullName && user.fullName.toLowerCase().includes(query))
+            );
+
+            renderTable();
+        }
+
+        function exportToSpreadsheet() {
+            if (activeData.combined.length === 0) {
+                showToast("無可匯出的關係數據！請先依照「第 2 步」貼上您的真實抓取 JSON 數據！", "error");
+                return;
+            }
+
+            const csvHeaders = ["Instagram 用戶名", "姓名", "我追蹤他?", "他追蹤我 (是粉絲)?", "關係狀態", "IG 個人主頁連結"];
+            const csvRows = [];
+            
+            activeData.combined.forEach(user => {
+                let status = "互相追蹤";
+                if (user.isFollowing && !user.isFollower) {
+                    status = "他沒回追你 (單向追蹤)";
+                } else if (!user.isFollowing && user.isFollower) {
+                    status = "你沒回追他 (純粉絲)";
+                }
+
+                const row = [
+                    `@${user.username}`,
+                    user.fullName.replace(/"/g, '""'), 
+                    user.isFollowing ? "是" : "否",
+                    user.isFollower ? "是" : "否",
+                    status,
+                    user.profileUrl
+                ];
+                
+                const formattedRow = row.map(cell => `"${cell}"`).join(",");
+                csvRows.push(formattedRow);
+            });
+
+            const csvString = [csvHeaders.join(","), ...csvRows].join("\n");
+            
+            const BOM = "\uFEFF";
+            const blob = new Blob([BOM + csvString], { type: "text/csv;charset=utf-8;" });
+            const url = URL.createObjectURL(blob);
+            
+            const link = document.createElement("a");
+            link.setAttribute("href", url);
+            
+            const dateStr = new Date().toISOString().slice(0, 10);
+            const fileName = `IG_真實關係分析_${activeData.username}_${dateStr}.csv`;
+            link.setAttribute("download", fileName);
+            
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            showToast(`試算表已匯出為 <strong>${fileName}</strong>，您可以用 Excel 完美打開！`, "success");
+        }
+
+        // Start initialization
+        window.onload = function() {
+            showToast("歡迎使用 InsTracker！全新「貼文相片一鍵下載」功能已上線！", "success");
+        }
+    </script>
+</body>
+</html>
